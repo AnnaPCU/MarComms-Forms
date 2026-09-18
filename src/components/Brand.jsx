@@ -13,8 +13,9 @@ export function BrandHeader({ title, subtitle, eyebrow = 'Inspections · Commerc
   return (
     <header>
       <div className="h-1.5 w-full bg-cyan" aria-hidden />
-      <div className="bg-navy text-white">
-        <div className={`mx-auto ${width} px-4 sm:px-6`}>
+      {/* The dark-blue block is boxed to the same content width as the page body. */}
+      <div className={`mx-auto ${width} px-4 pt-4 sm:px-6 sm:pt-6`}>
+        <div className="rounded-2xl bg-navy px-5 text-white shadow-[0_8px_24px_-12px_rgba(27,30,66,0.35)] sm:px-8">
           <div className="flex items-center justify-between gap-6 border-b border-white/10 py-4">
             <a href="#/" className="shrink-0" aria-label="MarComms · home">
               <img src={logoWhite} alt="MarComms" className="h-8 w-auto sm:h-9" />
@@ -24,7 +25,7 @@ export function BrandHeader({ title, subtitle, eyebrow = 'Inspections · Commerc
               {right}
             </div>
           </div>
-          <div className="py-8 sm:py-10">
+          <div className="py-7 sm:py-9">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan">{eyebrow}</p>
             <h1 className="mt-2 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{title}</h1>
             {subtitle && <p className="mt-3 max-w-3xl text-base leading-relaxed text-white/80">{subtitle}</p>}
