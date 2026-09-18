@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase, isConfigured, TABLE } from '../lib/supabase'
 import { dbToRecord, toRow, writeXlsx, writeCsv, stamp, safe } from '../utils/export'
 import { Button, Field, TextInput, Badge } from '../components/ui'
+import { BrandHeader, BrandFooter } from '../components/Brand'
 
 const PAGE = 1000 // Supabase returns at most 1000 rows per request
 
@@ -116,38 +117,34 @@ export default function AdminPage() {
   const downloadAll = () => {
     writeXlsx(
       [
-        { name: 'Client x Country', rows: records.map(toRow) },
+        { name: 'Survey', rows: records.map(toRow) },
         { name: 'Submissions', rows: summaryRows(submissions) },
       ],
-      `PCU_ClientCountryMatrix_ALL_${stamp()}.xlsx`,
+      `ABCCD_Survey_ALL_${stamp()}.xlsx`,
     )
   }
-  const downloadAllCsv = () => writeCsv(records.map(toRow), `PCU_ClientCountryMatrix_ALL_${stamp()}.csv`)
+  const downloadAllCsv = () => writeCsv(records.map(toRow), `ABCCD_Survey_ALL_${stamp()}.csv`)
   const downloadOne = (s) => {
     const rows = records.filter((r) => r.submissionId === s.submissionId).map(toRow)
-    writeXlsx([{ name: 'Client x Country', rows }], `PCU_ClientCountryMatrix_${safe(s.respondentName)}_${s.submittedAt.slice(0, 10)}.xlsx`)
+    writeXlsx([{ name: 'Survey', rows }], `ABCCD_Survey_${safe(s.respondentName)}_${s.submittedAt.slice(0, 10)}.xlsx`)
   }
 
   // ---------- render ----------
   const shell = (children) => (
-    <div className="min-h-screen">
-      <header className="bg-navy text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/60">PCU · Commercial intelligence</p>
-            <h1 className="text-xl font-bold">Client × Country Matrix · Admin</h1>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <a href="#/" className="text-white/75 hover:text-white">← Form</a>
-            {session && (
-              <Button variant="secondary" className="!border-white/40 !bg-transparent !text-white hover:!bg-white/10" onClick={() => supabase.auth.signOut()}>
-                Sign out
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+    <div className="flex min-h-screen flex-col">
+      <BrandHeader
+        title="ABCCD Survey · Admin"
+        subtitle="Consolidated view of every submission. Download the full Excel or a single respondent's file."
+        right={
+          session && (
+            <Button variant="ghost" onClick={() => supabase.auth.signOut()}>
+              Sign out
+            </Button>
+          )
+        }
+      />
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">{children}</main>
+      <BrandFooter links={[{ href: '#/', label: 'Back to form' }]} />
     </div>
   )
 

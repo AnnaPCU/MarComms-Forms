@@ -1,6 +1,6 @@
-# Client × Country Matrix — formulario dinámico PCU
+# ABCCD Survey · Client × Country — formulario dinámico PCU
 
-Aplicación web (React 18 + Vite + Tailwind CSS 4) para relevar, por cada combinación **Cliente × País**, las preguntas Q6 a Q14 del ejercicio de inteligencia comercial. Las respuestas se guardan en Supabase y se consolidan en un único Excel desde la página de administración.
+Aplicación web (React 18 + Vite + Tailwind CSS 4) que reproduce la plantilla `ABCCD Survey - Manual Template.xlsx`: por cada combinación **Cliente × Región × País**, las preguntas Q6 a Q14 del ejercicio de inteligencia comercial. Listas y textos de pregunta salen de la hoja `Validation` de esa plantilla. Las respuestas se guardan en Supabase y se consolidan en un único Excel desde la página de administración.
 
 Para configurar Supabase, GitHub y Vercel paso a paso, ver [SETUP.md](SETUP.md).
 
@@ -29,9 +29,9 @@ Sin las variables de entorno la app sigue funcionando en modo "solo exportar": e
 
 ## Flujo del formulario
 
-1. **Respondent**: nombre, país (lista de 33) y clientes (texto libre, uno o varios).
-2. **Countries per client**: por cada cliente, chips de países con filtro.
-3. **Client × Country details**: una tarjeta desplegable por combinación con Q6–Q14. Badge `n/9 answered` por tarjeta y panel lateral de progreso.
+1. **Respondent and clients**: nombre, país y clientes (ADM, Bunge, Cargill, COFCO, LDC).
+2. **Regions and countries per client**: por cada cliente, regiones (APAC, Americas, EEMA, NEG) y, dentro de cada región, sus países.
+3. **Client × Country details**: una tarjeta desplegable por combinación con Q6–Q14. Q12 admite hasta 2 gaps y Q13 pide un motivo por cada gap elegido. Badge `n/9 answered` por tarjeta y panel lateral de progreso.
 4. **Submit**: guarda en Supabase con un `submission_id` único. También permite bajar una copia propia en `.xlsx` o `.csv`.
 
 El borrador se guarda automáticamente en `localStorage` del navegador (clave `pcu-client-country-matrix-v1`).
@@ -46,20 +46,19 @@ El borrador se guarda automáticamente en `localStorage` del navegador (clave `p
 
 ## Formato de exportación
 
-Una fila por combinación Cliente × País. Columnas, en orden:
+Una fila por combinación Cliente × País, con las mismas 14 columnas y los mismos encabezados de la hoja `Survey` de la plantilla (A–N: Respondent name, Respondent country, cliente, región, país, Q6 a Q14), más dos columnas de control al final: `Submitted at` y `Submission ID`.
 
-`Respondent Name · Respondent Country · Client · Country · Q6 Services · Q6 Other service · Q7 Stakeholder groups · Q8 Maturity (1-5) · Q9 Office type · Q10 Strategic importance (1-5) · Q11 Decision level · Q12 Main gap · Q12 Other gap · Q13 Main reason · Q13 Other reason · Q14 Most important action · Submitted at · Submission ID`
-
-Las selecciones múltiples se unen con `; `.
+Las selecciones múltiples se unen con `; `. En Q13 los motivos van en el mismo orden que los gaps de Q12. Cuando se elige "Other", se exporta como `Other: <texto>`.
 
 ## Editar las listas
 
-Todas las listas maestras están en [`src/data/constants.js`](src/data/constants.js): países, servicios (Q6), tipos de oficina (Q9), niveles de decisión (Q11), gaps (Q12), motivos (Q13) y los máximos de selección. `CLIENT_SUGGESTIONS` permite precargar nombres de clientes para autocompletar.
+Todas las listas maestras están en [`src/data/constants.js`](src/data/constants.js): clientes, regiones y países por región, servicios (Q6), stakeholders (Q7), madurez (Q8), tipo de oficina (Q9), importancia (Q10), nivel de decisión (Q11), gaps (Q12), motivos (Q13) y los textos de pregunta usados como encabezados. Si cambia la plantilla Excel, se cambia ahí.
 
 ## Estructura
 
 ```
-supabase/schema.sql              tabla, índices, políticas RLS y vista de resumen
+supabase/schema.sql              tabla, índices, políticas RLS y vista de resumen (instalación nueva)
+supabase/migrations/002_*.sql    migración para tablas creadas con la versión anterior
 src/
   App.jsx                        enrutado por hash (#/ formulario · #/admin)
   pages/FormPage.jsx             formulario, ramificación N×M, validación, insert en Supabase

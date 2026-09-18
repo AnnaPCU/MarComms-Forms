@@ -24,6 +24,8 @@ Tiempo estimado: 30 a 40 minutos. Hay tres bloques: Supabase (base de datos), Gi
 3. **Run** (abajo a la derecha). Debe decir `Success. No rows returned`.
 4. Comprobar: menú **Table Editor** → debe aparecer la tabla `responses` vacía.
 
+Si la tabla `responses` **ya existía** de una versión anterior, en vez de `schema.sql` ejecutar una sola vez `supabase/migrations/002_template_alignment.sql` (agrega la columna región, pasa Q8 y Q10 a texto y borra la fila de prueba).
+
 Qué hizo ese script: creó la tabla, activó la seguridad por filas y dejó dos reglas. Cualquier persona con el link del formulario puede **insertar** respuestas y nada más. Solo un usuario con sesión iniciada puede **leer**. Nadie puede borrar ni editar desde la web.
 
 ### 1.3 Crear tu usuario de administración
@@ -104,7 +106,9 @@ Antes de **Deploy**, desplegar **Environment Variables** y agregar dos:
 | Name | Value |
 |---|---|
 | `VITE_SUPABASE_URL` | la Project URL del paso 1.5 |
-| `VITE_SUPABASE_ANON_KEY` | la anon public key del paso 1.5 |
+| `VITE_SUPABASE_ANON_KEY` | la anon public key (o publishable key `sb_publishable_…`) del paso 1.5 |
+
+También se aceptan los nombres que muestra Supabase por defecto: `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 ### 3.3 Publicar
 
@@ -119,7 +123,7 @@ Si se agregaron las variables después del primer deploy, hay que hacer **Deploy
 
 1. Abrir la URL de Vercel. Completar nombre, país, un cliente, un país y una tarjeta. **Submit form**. Debe aparecer un mensaje verde con una referencia de 8 caracteres.
 2. En Supabase → **Table Editor** → `responses`: deben aparecer las filas.
-3. Abrir `https://TU-URL.vercel.app/#/admin`. Entrar con el usuario del paso 1.3. Debe listar el envío. **Download consolidated Excel** baja un archivo con dos hojas: `Client x Country` (una fila por combinación, mismas 17 columnas del formulario más el ID de envío) y `Submissions` (un renglón por persona).
+3. Abrir `https://TU-URL.vercel.app/#/admin`. Entrar con el usuario del paso 1.3. Debe listar el envío. **Download consolidated Excel** baja un archivo con dos hojas: `Survey` (una fila por combinación, mismas columnas y encabezados que la plantilla Excel más fecha e ID de envío) y `Submissions` (un renglón por persona).
 4. Desde Supabase → **Table Editor** se puede borrar la fila de prueba si se quiere.
 
 ---

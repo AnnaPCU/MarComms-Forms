@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx'
+import { COUNTRY_REGION, QUESTIONS } from '../data/constants.js'
 
 export const pairKey = (client, country) => `${client}|||${country}`
 export const splitKey = (key) => key.split('|||')
@@ -7,62 +8,76 @@ export const emptyAnswer = () => ({
   services: [],
   serviceOther: '',
   stakeholders: [],
-  maturity: null,
+  maturity: '',
   officeType: '',
-  importance: null,
+  importance: '',
   decisions: '',
   gaps: [],
   gapOther: '',
-  reasons: [],
+  reasons: {}, // { [gap]: reason }
   reasonOther: '',
   action: '',
 })
 
 const join = (arr) => (arr || []).join('; ')
 
+/** Reasons in the same order as the gaps they belong to (column M aligns with column L). */
+export const reasonsInGapOrder = (a) => (a.gaps || []).map((g) => (a.reasons || {})[g] || '')
+
 /** Ordered list of every Client × Country pair currently in the form. */
 export function listPairs(form) {
   return form.clients.flatMap((client) =>
-    (form.clientCountries[client] || []).map((country) => ({ client, country, key: pairKey(client, country) })),
+    (form.clientCountries[client] || []).map((country) => ({
+      client,
+      country,
+      region: COUNTRY_REGION[country] || '',
+      key: pairKey(client, country),
+    })),
   )
 }
 
 /**
  * A "record" is the neutral shape shared by the live form and the database:
- * { submissionId, submittedAt, respondentName, respondentCountry, client, country, answer }
+ * { submissionId, submittedAt, respondentName, respondentCountry, client, region, country, answer }
  */
 export function formRecords(form, submissionId = null, submittedAt = new Date().toISOString()) {
-  return listPairs(form).map(({ client, country, key }) => ({
+  return listPairs(form).map(({ client, country, region, key }) => ({
     submissionId,
     submittedAt,
     respondentName: form.respondentName,
     respondentCountry: form.respondentCountry,
     client,
+    region,
     country,
     answer: form.answers[key] || emptyAnswer(),
   }))
 }
 
-/** One flat spreadsheet row per record. Column order mirrors the working Excel layout. */
+/** One flat spreadsheet row per record. Headers and order match the template sheet "Survey" (A–N). */
 export function toRow(r) {
-  const a = r.answer || emptyAnswer()
+  const a = { ...emptyAnswer(), ...(r.answer || {}) }
+  const services = a.services.includes('Other') && a.serviceOther
+    ? a.services.map((s) => (s === 'Other' ? `Other: ${a.serviceOther}` : s))
+    : a.services
+  const gaps = a.gapOther
+    ? a.gaps.map((g) => (g.startsWith('Other') ? `Other: ${a.gapOther}` : g))
+    : a.gaps
+  const reasons = reasonsInGapOrder(a).map((x) => (x.startsWith('Other') && a.reasonOther ? `Other: ${a.reasonOther}` : x))
   return {
-    'Respondent Name': r.respondentName,
-    'Respondent Country': r.respondentCountry,
-    Client: r.client,
-    Country: r.country,
-    'Q6 Services': join(a.services),
-    'Q6 Other service': a.serviceOther || '',
-    'Q7 Stakeholder groups': join(a.stakeholders),
-    'Q8 Maturity (1-5)': a.maturity ?? '',
-    'Q9 Office type': a.officeType || '',
-    'Q10 Strategic importance (1-5)': a.importance ?? '',
-    'Q11 Decision level': a.decisions || '',
-    'Q12 Main gap': join(a.gaps),
-    'Q12 Other gap': a.gapOther || '',
-    'Q13 Main reason': join(a.reasons),
-    'Q13 Other reason': a.reasonOther || '',
-    'Q14 Most important action': a.action || '',
+    [QUESTIONS.respondentName]: r.respondentName,
+    [QUESTIONS.respondentCountry]: r.respondentCountry,
+    [QUESTIONS.client]: r.client,
+    [QUESTIONS.region]: r.region || COUNTRY_REGION[r.country] || '',
+    [QUESTIONS.country]: r.country,
+    [QUESTIONS.q6]: join(services),
+    [QUESTIONS.q7]: join(a.stakeholders),
+    [QUESTIONS.q8]: a.maturity,
+    [QUESTIONS.q9]: a.officeType,
+    [QUESTIONS.q10]: a.importance,
+    [QUESTIONS.q11]: a.decisions,
+    [QUESTIONS.q12]: join(gaps),
+    [QUESTIONS.q13]: join(reasons),
+    [QUESTIONS.q14]: a.action,
     'Submitted at': r.submittedAt || '',
     'Submission ID': r.submissionId || '',
   }
@@ -79,6 +94,7 @@ export function toDbRows(form, submissionId, submittedAt) {
     respondent_name: r.respondentName,
     respondent_country: r.respondentCountry,
     client: r.client,
+    region: r.region,
     country: r.country,
     services: r.answer.services,
     service_other: r.answer.serviceOther,
@@ -89,31 +105,34 @@ export function toDbRows(form, submissionId, submittedAt) {
     decisions: r.answer.decisions,
     gaps: r.answer.gaps,
     gap_other: r.answer.gapOther,
-    reasons: r.answer.reasons,
+    reasons: reasonsInGapOrder(r.answer),
     reason_other: r.answer.reasonOther,
     action: r.answer.action,
   }))
 }
 
 export function dbToRecord(d) {
+  const gaps = d.gaps || []
+  const reasonsArr = d.reasons || []
   return {
     submissionId: d.submission_id,
     submittedAt: d.submitted_at,
     respondentName: d.respondent_name,
     respondentCountry: d.respondent_country,
     client: d.client,
+    region: d.region || COUNTRY_REGION[d.country] || '',
     country: d.country,
     answer: {
       services: d.services || [],
       serviceOther: d.service_other || '',
       stakeholders: d.stakeholders || [],
-      maturity: d.maturity,
+      maturity: d.maturity == null ? '' : String(d.maturity),
       officeType: d.office_type || '',
-      importance: d.importance,
+      importance: d.importance == null ? '' : String(d.importance),
       decisions: d.decisions || '',
-      gaps: d.gaps || [],
+      gaps,
       gapOther: d.gap_other || '',
-      reasons: d.reasons || [],
+      reasons: Object.fromEntries(gaps.map((g, i) => [g, reasonsArr[i] || ''])),
       reasonOther: d.reason_other || '',
       action: d.action || '',
     },
@@ -126,7 +145,7 @@ export const stamp = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g
 export const safe = (s) => (s || 'respondent').replace(/[^\w-]+/g, '_').slice(0, 40)
 
 function autoWidth(rows) {
-  return Object.keys(rows[0] || {}).map((h) => ({ wch: Math.min(60, Math.max(14, h.length + 2)) }))
+  return Object.keys(rows[0] || {}).map((h) => ({ wch: Math.min(60, Math.max(14, Math.round(h.length * 0.6))) }))
 }
 
 /** Write an .xlsx with one or more sheets: [{ name, rows }]. */
@@ -148,7 +167,7 @@ export function writeCsv(rows, filename) {
     return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
   const csv = [headers.join(','), ...rows.map((r) => headers.map((h) => esc(r[h])).join(','))].join('\r\n')
-  // Leading BOM so Excel opens the file as UTF-8 (accents in country names).
+  // Leading BOM so Excel opens the file as UTF-8.
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -159,9 +178,9 @@ export function writeCsv(rows, filename) {
 }
 
 export function exportXlsx(form) {
-  writeXlsx([{ name: 'Client x Country', rows: flattenRows(form) }], `PCU_ClientCountryMatrix_${safe(form.respondentName)}_${stamp()}.xlsx`)
+  writeXlsx([{ name: 'Survey', rows: flattenRows(form) }], `ABCCD_Survey_${safe(form.respondentName)}_${stamp()}.xlsx`)
 }
 
 export function exportCsv(form) {
-  writeCsv(flattenRows(form), `PCU_ClientCountryMatrix_${safe(form.respondentName)}_${stamp()}.csv`)
+  writeCsv(flattenRows(form), `ABCCD_Survey_${safe(form.respondentName)}_${stamp()}.csv`)
 }

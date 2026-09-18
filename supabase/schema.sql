@@ -1,5 +1,6 @@
--- Client × Country Matrix · esquema Supabase
+-- ABCCD Survey · Client × Country · esquema Supabase (instalación desde cero)
 -- Pegar completo en Supabase → SQL Editor → Run. Se puede volver a ejecutar sin romper nada.
+-- Si la tabla ya existía con la versión anterior, ejecutar en su lugar supabase/migrations/002_template_alignment.sql
 
 create extension if not exists "pgcrypto";
 
@@ -11,20 +12,21 @@ create table if not exists public.responses (
   submitted_at        timestamptz not null default now(),
   respondent_name     text        not null,
   respondent_country  text        not null,
-  client              text        not null,
+  client              text        not null,                 -- ADM, Bunge, Cargill, COFCO, LDC
+  region              text        not null default '',      -- APAC, Americas, EEMA, NEG
   country             text        not null,
-  services            text[]      not null default '{}',   -- Q6
+  services            text[]      not null default '{}',    -- Q6
   service_other       text        not null default '',
-  stakeholders        text[]      not null default '{}',   -- Q7
-  maturity            smallint    check (maturity between 1 and 5),        -- Q8
-  office_type         text        not null default '',     -- Q9
-  importance          smallint    check (importance between 1 and 5),      -- Q10
-  decisions           text        not null default '',     -- Q11
-  gaps                text[]      not null default '{}',   -- Q12
+  stakeholders        text[]      not null default '{}',    -- Q7
+  maturity            text        not null default '',      -- Q8
+  office_type         text        not null default '',      -- Q9
+  importance          text        not null default '',      -- Q10
+  decisions           text        not null default '',      -- Q11
+  gaps                text[]      not null default '{}',    -- Q12 (hasta 2)
   gap_other           text        not null default '',
-  reasons             text[]      not null default '{}',   -- Q13
+  reasons             text[]      not null default '{}',    -- Q13, alineado posicionalmente con gaps
   reason_other        text        not null default '',
-  action              text        not null default '',     -- Q14
+  action              text        not null default '',      -- Q14
   created_at          timestamptz not null default now()
 );
 

@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
-import { COUNTRIES, CLIENT_SUGGESTIONS } from '../data/constants'
+import { CLIENTS, REGIONS, COUNTRIES_BY_REGION, COUNTRY_REGION, ALL_COUNTRIES, RESPONDENT_COUNTRIES, QUESTIONS } from '../data/constants'
 import { pairKey, splitKey, emptyAnswer, listPairs, exportXlsx, exportCsv, toDbRows } from '../utils/export'
 import { supabase, isConfigured, TABLE } from '../lib/supabase'
-import { Section, Field, TextInput, Select, TagInput, ChipGroup, Button, Badge } from '../components/ui'
+import { Section, Field, TextInput, Select, ChipGroup, Button, Badge } from '../components/ui'
 import ClientCountryCard, { completion, ANSWER_FIELDS } from '../components/ClientCountryCard'
+import { BrandHeader, BrandFooter } from '../components/Brand'
 
-const STORAGE_KEY = 'pcu-client-country-matrix-v1'
+const STORAGE_KEY = 'pcu-abccd-survey-v2'
 
 const initialForm = () => ({
   respondentName: '',
   respondentCountry: '',
   clients: [],
-  clientCountries: {},
-  answers: {},
+  clientRegions: {}, // { [client]: [region] }
+  clientCountries: {}, // { [client]: [country] }
+  answers: {}, // { [client|||country]: answer }
 })
 
 function loadDraft() {
@@ -23,6 +25,8 @@ function loadDraft() {
     return initialForm()
   }
 }
+
+const sortCountries = (list) => ALL_COUNTRIES.filter((c) => list.includes(c))
 
 export default function FormPage() {
   const [form, setForm] = useState(loadDraft)
@@ -46,33 +50,47 @@ export default function FormPage() {
     if (submit.status === 'success') setSubmit({ status: 'idle', message: '' })
   }
 
-  const setClients = (next) =>
+  /** Recompute answers so only current client×country pairs remain, seeding new ones. */
+  const syncAnswers = (f) => {
+    const answers = {}
+    f.clients.forEach((client) => {
+      ;(f.clientCountries[client] || []).forEach((country) => {
+        const k = pairKey(client, country)
+        answers[k] = f.answers[k] || emptyAnswer()
+      })
+    })
+    return { ...f, answers }
+  }
+
+  const setClients = (picked) =>
     setForm((f) => {
+      const clients = CLIENTS.filter((c) => picked.includes(c))
+      const clientRegions = {}
       const clientCountries = {}
-      next.forEach((c) => {
+      clients.forEach((c) => {
+        clientRegions[c] = f.clientRegions[c] || []
         clientCountries[c] = f.clientCountries[c] || []
       })
-      const answers = {}
-      Object.entries(f.answers).forEach(([k, v]) => {
-        if (next.includes(splitKey(k)[0])) answers[k] = v
-      })
-      return { ...f, clients: next, clientCountries, answers }
+      return syncAnswers({ ...f, clients, clientRegions, clientCountries })
     })
 
-  const setClientCountries = (client, picked) =>
+  const setClientRegions = (client, picked) =>
     setForm((f) => {
-      // Keep master-list order so cards and export rows are stable regardless of click order.
-      const countries = COUNTRIES.filter((c) => picked.includes(c))
-      const answers = { ...f.answers }
-      Object.keys(answers).forEach((k) => {
-        const [c, co] = splitKey(k)
-        if (c === client && !countries.includes(co)) delete answers[k]
+      const regions = REGIONS.filter((r) => picked.includes(r))
+      // Drop countries whose region was unselected.
+      const countries = (f.clientCountries[client] || []).filter((c) => regions.includes(COUNTRY_REGION[c]))
+      return syncAnswers({
+        ...f,
+        clientRegions: { ...f.clientRegions, [client]: regions },
+        clientCountries: { ...f.clientCountries, [client]: countries },
       })
-      countries.forEach((co) => {
-        const k = pairKey(client, co)
-        if (!answers[k]) answers[k] = emptyAnswer()
-      })
-      return { ...f, clientCountries: { ...f.clientCountries, [client]: countries }, answers }
+    })
+
+  const setRegionCountries = (client, region, picked) =>
+    setForm((f) => {
+      const others = (f.clientCountries[client] || []).filter((c) => COUNTRY_REGION[c] !== region)
+      const countries = sortCountries([...others, ...picked])
+      return syncAnswers({ ...f, clientCountries: { ...f.clientCountries, [client]: countries } })
     })
 
   const updateAnswer = (key, p) =>
@@ -89,9 +107,10 @@ export default function FormPage() {
     const list = []
     if (!form.respondentName.trim()) list.push('Respondent name is required.')
     if (!form.respondentCountry) list.push('Respondent country is required.')
-    if (!form.clients.length) list.push('Add at least one client.')
+    if (!form.clients.length) list.push('Select at least one client.')
     form.clients.forEach((c) => {
-      if (!(form.clientCountries[c] || []).length) list.push(`Select at least one country for "${c}".`)
+      if (!(form.clientRegions[c] || []).length) list.push(`Select at least one region for ${c}.`)
+      else if (!(form.clientCountries[c] || []).length) list.push(`Select at least one country for ${c}.`)
     })
     return list
   }, [form])
@@ -126,23 +145,17 @@ export default function FormPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="bg-navy text-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-6 py-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/60">PCU · Commercial intelligence</p>
-          <h1 className="text-2xl font-bold">Client × Country Matrix</h1>
-          <p className="max-w-2xl text-sm text-white/75">
-            Map every client you work with to the countries where you serve them, then answer nine questions per
-            combination. Your answers are saved in this browser until you submit them.
-          </p>
-        </div>
-      </header>
+      <BrandHeader
+        title="ABCCD Survey · Client × Country"
+        subtitle="Tell us which clients you work with, in which regions and countries, and answer nine questions per Client × Country. Your answers are saved in this browser until you submit them."
+      />
 
       <main className="mx-auto grid max-w-6xl gap-6 px-6 py-8 lg:grid-cols-[1fr_280px]">
         <div className="space-y-6">
-          {/* 1 · General */}
-          <Section number={1} title="Respondent" description="Who is completing this form.">
+          {/* 1 · Respondent + clients */}
+          <Section number={1} title="Respondent and clients" description="Who is completing this form and which clients they work with.">
             <div className="grid gap-5 md:grid-cols-2">
-              <Field label="Respondent name" required>
+              <Field label={QUESTIONS.respondentName} required>
                 <TextInput
                   value={form.respondentName}
                   onChange={(e) => patch({ respondentName: e.target.value })}
@@ -150,40 +163,58 @@ export default function FormPage() {
                   autoComplete="name"
                 />
               </Field>
-              <Field label="Respondent country" required>
+              <Field label={QUESTIONS.respondentCountry} required>
                 <Select
-                  options={COUNTRIES}
+                  options={RESPONDENT_COUNTRIES}
                   value={form.respondentCountry}
                   onChange={(v) => patch({ respondentCountry: v })}
                   placeholder="Select your country…"
                 />
               </Field>
-              <Field label="Clients" required hint="Type a client name and press Enter. Add as many as you need." className="md:col-span-2">
-                <TagInput id="clients" value={form.clients} onChange={setClients} placeholder="Client name…" suggestions={CLIENT_SUGGESTIONS} />
+              <Field label={QUESTIONS.client} required hint="Select all that apply." className="md:col-span-2">
+                <ChipGroup options={CLIENTS} value={form.clients} onChange={setClients} />
               </Field>
             </div>
           </Section>
 
-          {/* 2 · Countries per client */}
+          {/* 2 · Regions and countries per client */}
           <Section
             number={2}
-            title="Countries per client"
-            description="For each client, select every country where you provide services."
+            title="Regions and countries per client"
+            description="For each client: which regions you work with, then the countries within each region."
             locked={step2Locked}
-            lockedHint="Add at least one client in step 1 to continue."
+            lockedHint="Select at least one client in step 1 to continue."
           >
             <div className="space-y-6">
               {form.clients.map((client) => {
-                const sel = form.clientCountries[client] || []
+                const regions = form.clientRegions[client] || []
+                const countries = form.clientCountries[client] || []
                 return (
                   <div key={client} className="rounded-xl border border-slate-200 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h3 className="font-bold text-navy">{client}</h3>
-                      <Badge tone={sel.length ? 'navy' : 'warn'}>
-                        {sel.length ? `${sel.length} countr${sel.length === 1 ? 'y' : 'ies'}` : 'No country yet'}
+                      <Badge tone={countries.length ? 'navy' : 'warn'}>
+                        {countries.length ? `${countries.length} countr${countries.length === 1 ? 'y' : 'ies'}` : 'No country yet'}
                       </Badge>
                     </div>
-                    <ChipGroup options={COUNTRIES} value={sel} onChange={(v) => setClientCountries(client, v)} searchable />
+                    <Field label={QUESTIONS.region} hint="Select all that apply.">
+                      <ChipGroup options={REGIONS} value={regions} onChange={(v) => setClientRegions(client, v)} />
+                    </Field>
+                    {regions.map((region) => {
+                      const sel = countries.filter((c) => COUNTRY_REGION[c] === region)
+                      return (
+                        <div key={region} className="mt-4 border-t border-slate-100 pt-4">
+                          <Field label={`${QUESTIONS.country} · ${region}`}>
+                            <ChipGroup
+                              options={COUNTRIES_BY_REGION[region]}
+                              value={sel}
+                              onChange={(v) => setRegionCountries(client, region, v)}
+                              searchable={COUNTRIES_BY_REGION[region].length > 12}
+                            />
+                          </Field>
+                        </div>
+                      )
+                    })}
                   </div>
                 )
               })}
@@ -196,7 +227,7 @@ export default function FormPage() {
             title="Client × Country details"
             description="One card per combination. Expand a card to answer Q6 to Q14."
             locked={step3Locked}
-            lockedHint="Select countries for your clients in step 2 to generate the cards."
+            lockedHint="Select regions and countries for your clients in step 2 to generate the cards."
           >
             <div className="space-y-6">
               {form.clients.map((client) => {
@@ -212,6 +243,7 @@ export default function FormPage() {
                           <ClientCountryCard
                             key={key}
                             client={client}
+                            region={COUNTRY_REGION[country]}
                             country={country}
                             answer={form.answers[key] || emptyAnswer()}
                             onChange={(p) => updateAnswer(key, p)}
@@ -268,7 +300,7 @@ export default function FormPage() {
                     Export as .csv
                   </Button>
                 </div>
-                <p className="mt-1.5 text-xs text-mist">One row per Client × Country combination, with all answers as columns.</p>
+                <p className="mt-1.5 text-xs text-mist">Same layout as the survey template: one row per Client × Country.</p>
               </div>
             </div>
           </Section>
@@ -296,7 +328,7 @@ export default function FormPage() {
             </dl>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-navy transition-all"
+                className="h-full rounded-full bg-cyan transition-all"
                 style={{ width: pairs.length ? `${Math.round((answeredCount / pairs.length) * 100)}%` : '0%' }}
               />
             </div>
@@ -321,9 +353,7 @@ export default function FormPage() {
         </aside>
       </main>
 
-      <footer className="mx-auto max-w-6xl px-6 pb-8 text-right">
-        <a href="#/admin" className="text-xs text-mist hover:text-navy">Admin</a>
-      </footer>
+      <BrandFooter links={[{ href: '#/admin', label: 'Admin' }]} />
     </div>
   )
 }
