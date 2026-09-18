@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CLIENTS, REGIONS, COUNTRIES_BY_REGION, COUNTRY_REGION, ALL_COUNTRIES, RESPONDENT_COUNTRIES, QUESTIONS, EMAIL_DOMAIN, isCompanyEmail } from '../data/constants'
+import { CLIENTS, REGIONS, COUNTRIES_BY_REGION, COUNTRY_REGION, ALL_COUNTRIES, RESPONDENT_COUNTRIES, QUESTIONS, EMAIL_DOMAINS, isCompanyEmail } from '../data/constants'
 import { pairKey, splitKey, emptyAnswer, listPairs, toDbRows } from '../utils/export'
 import { supabase, isConfigured, TABLE } from '../lib/supabase'
 import { Section, Field, TextInput, Select, ChipGroup, Button, Badge, Notice, CheckIcon } from '../components/ui'
@@ -136,8 +136,8 @@ export default function FormPage() {
   // (Q13 only for gaps that need a reason; "Other" text only when "Other" is selected).
   const issues = useMemo(() => {
     const list = []
-    if (!form.respondentName.trim()) list.push({ text: 'Respondent email is required.' })
-    else if (!isCompanyEmail(form.respondentName)) list.push({ text: 'Respondent email: use your company email.' })
+    if (!form.respondentName.trim()) list.push({ text: 'Respondent corporate email is required.' })
+    else if (!isCompanyEmail(form.respondentName)) list.push({ text: 'Respondent corporate email: use a pcugroup, onepeterson or controlunion address.' })
     if (!form.respondentCountry) list.push({ text: 'Respondent country is required.' })
     if (!form.clients.length) list.push({ text: 'Select at least one client.' })
     form.clients.forEach((c) => {
@@ -225,7 +225,7 @@ export default function FormPage() {
                   attempted && !form.respondentName.trim()
                     ? 'Required'
                     : form.respondentName.trim() && !isCompanyEmail(form.respondentName)
-                      ? 'Use your company email'
+                      ? 'Use your corporate email: pcugroup, onepeterson or controlunion'
                       : undefined
                 }
               >
@@ -234,7 +234,7 @@ export default function FormPage() {
                   inputMode="email"
                   value={form.respondentName}
                   onChange={(e) => patch({ respondentName: e.target.value.trim() })}
-                  placeholder={`asanguinetti@${EMAIL_DOMAIN}`}
+                  placeholder={`name@${EMAIL_DOMAINS[0]}, @${EMAIL_DOMAINS[1]} or @${EMAIL_DOMAINS[2]}`}
                   autoComplete="email"
                   spellCheck={false}
                 />

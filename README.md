@@ -29,7 +29,7 @@ Sin las variables de entorno la app sigue funcionando en modo "solo exportar": e
 
 ## Flujo del formulario
 
-1. **Respondent and clients**: email corporativo (dominio pcugroup.com), país y clientes (ADM, Bunge, Cargill, COFCO, LDC).
+1. **Respondent and clients**: email corporativo (pcugroup.com, onepeterson.com o controlunion.com), país y clientes (ADM, Bunge, Cargill, COFCO, LDC).
 2. **Regions and countries per client**: por cada cliente, regiones (APAC, Americas, EEMA, NEG) y, dentro de cada región, sus países.
 3. **Client × Country details**: una tarjeta desplegable por combinación con Q6–Q14. Q12 admite hasta 2 gaps y Q13 pide un motivo por cada gap elegido. Badge `n/9 answered` por tarjeta y panel lateral de progreso.
 4. **Submit**: guarda en Supabase con un `submission_id` único. También permite bajar una copia propia en `.xlsx` o `.csv`.
@@ -46,7 +46,7 @@ El borrador se guarda automáticamente en `localStorage` del navegador (clave `p
 
 ## Formato de exportación
 
-Una fila por combinación Cliente × País, con las mismas 14 columnas y los mismos encabezados de la hoja `Survey` de la plantilla (A–N: Respondent email, Respondent country, cliente, región, país, Q6 a Q14), más dos columnas de control al final: `Submitted at` y `Submission ID`.
+Una fila por combinación Cliente × País, con las mismas 14 columnas y los mismos encabezados de la hoja `Survey` de la plantilla (A–N: Respondent corporate email, Respondent country, cliente, región, país, Q6 a Q14), más dos columnas de control al final: `Submitted at` y `Submission ID`.
 
 Las selecciones múltiples se unen con `; `. En Q13 los motivos van en el mismo orden que los gaps de Q12. Cuando se elige "Other", se exporta como `Other: <texto>`.
 
