@@ -7,28 +7,38 @@ export { logoColor, logoWhite, logoIcon }
 /**
  * Brand frame following the Control Union style guide:
  *  · light-blue (cyan) bar along the whole top edge
- *  · logo top-left with clear space, primary full-colour version on white
- *  · dark-blue band for the page title
+ *  · one dark-blue block: white logo top-left, then the page title
  */
-export function BrandHeader({ title, subtitle, eyebrow = 'PCU · Commercial intelligence', right = null }) {
+export function BrandHeader({ title, subtitle, eyebrow = 'Inspections · Commercial intelligence', facts = [], right = null }) {
   return (
     <header>
       <div className="h-1.5 w-full bg-cyan" aria-hidden />
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-          <a href="#/" className="shrink-0" aria-label="MarComms · home">
-            <img src={logoColor} alt="MarComms" className="h-9 w-auto sm:h-10" />
-          </a>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="hidden text-xs font-semibold uppercase tracking-widest text-mist sm:inline">{eyebrow}</span>
-            {right}
-          </div>
-        </div>
-      </div>
       <div className="bg-navy text-white">
-        <div className="mx-auto max-w-6xl px-6 py-7">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-          {subtitle && <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/75">{subtitle}</p>}
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="flex items-center justify-between gap-6 border-b border-white/10 py-4">
+            <a href="#/" className="shrink-0" aria-label="MarComms · home">
+              <img src={logoWhite} alt="MarComms" className="h-8 w-auto sm:h-9" />
+            </a>
+            <div className="flex items-center gap-4">
+              <span className="hidden text-xs font-medium uppercase tracking-[0.2em] text-white/60 md:inline">Peterson and Control Union</span>
+              {right}
+            </div>
+          </div>
+          <div className="py-8 sm:py-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan">{eyebrow}</p>
+            <h1 className="mt-2 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{title}</h1>
+            {subtitle && <p className="mt-3 max-w-3xl text-base leading-relaxed text-white/80">{subtitle}</p>}
+            {facts.length > 0 && (
+              <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
+                {facts.map((f) => (
+                  <li key={f} className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan" aria-hidden />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </header>
@@ -41,7 +51,7 @@ export function BrandHeader({ title, subtitle, eyebrow = 'PCU · Commercial inte
  */
 export function BrandFooter({ links = [] }) {
   return (
-    <footer className="mt-12 border-t border-slate-200 bg-white">
+    <footer className="mt-12 border-t border-mist-200 bg-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6">
         <div className="flex items-center gap-3">
           <img src={logoIcon} alt="" className="h-7 w-auto" aria-hidden />
@@ -52,7 +62,7 @@ export function BrandFooter({ links = [] }) {
         </div>
         <nav className="flex items-center gap-4 text-xs font-medium">
           {links.map((l) => (
-            <a key={l.href} href={l.href} className="text-mist hover:text-navy">{l.label}</a>
+            <a key={l.href} href={l.href} className="inline-flex min-h-9 items-center px-1 text-ink hover:text-navy">{l.label}</a>
           ))}
         </nav>
       </div>

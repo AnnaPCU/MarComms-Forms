@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, isConfigured, TABLE } from '../lib/supabase'
 import { dbToRecord, toRow, writeXlsx, writeCsv, stamp, safe } from '../utils/export'
-import { Button, Field, TextInput, Badge } from '../components/ui'
+import { Button, Field, TextInput, Badge, Section, Notice } from '../components/ui'
 import { BrandHeader, BrandFooter } from '../components/Brand'
 
 const PAGE = 1000 // Supabase returns at most 1000 rows per request
@@ -134,10 +134,11 @@ export default function AdminPage() {
     <div className="flex min-h-screen flex-col">
       <BrandHeader
         title="ABCCD Survey · Admin"
+        eyebrow="Inspections · Commercial intelligence · Admin"
         subtitle="Consolidated view of every submission. Download the full Excel or a single respondent's file."
         right={
           session && (
-            <Button variant="ghost" onClick={() => supabase.auth.signOut()}>
+            <Button variant="onDark" size="sm" onClick={() => supabase.auth.signOut()}>
               Sign out
             </Button>
           )
@@ -160,7 +161,7 @@ export default function AdminPage() {
 
   if (!session) {
     return shell(
-      <form onSubmit={signIn} className="mx-auto max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <form onSubmit={signIn} className="mx-auto max-w-sm rounded-2xl border border-mist-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-bold text-navy">Sign in</h2>
         <div className="space-y-4">
           <Field label="Email">
@@ -185,27 +186,28 @@ export default function AdminPage() {
           ['Respondents', respondents],
           ['Client × Country rows', records.length],
         ].map(([label, n]) => (
-          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-mist">{label}</p>
-            <p className="mt-1 text-3xl font-bold text-navy">{loading ? '…' : n}</p>
+          <div key={label} className="rounded-2xl border border-mist-200 border-t-4 border-t-cyan bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink">{label}</p>
+            <p className="mt-1 text-3xl font-bold tabular-nums text-navy">{loading ? '…' : n}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-mist-200 bg-white p-4 shadow-sm">
         <Button onClick={downloadAll} disabled={!records.length}>Download consolidated Excel</Button>
-        <Button variant="secondary" onClick={downloadAllCsv} disabled={!records.length}>Download .csv</Button>
+        <Button variant="ghost" onClick={downloadAllCsv} disabled={!records.length}>.csv</Button>
         <Button variant="ghost" onClick={load} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh'}</Button>
-        <div className="ml-auto w-full sm:w-64">
+        <div className="ml-auto w-full sm:max-w-xs">
           <TextInput placeholder="Filter by respondent, country or client…" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
       </div>
 
-      {loadError && <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-800">Could not load responses: {loadError}</p>}
+      {loadError && <Notice tone="error" title="Could not load responses">{loadError}</Notice>}
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <Section title="Submissions" description={`${visible.length} of ${submissions.length} shown`}>
+      <div className="-mx-4 overflow-x-auto sm:-mx-6">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-mist">
+          <thead className="bg-paper text-left text-xs font-semibold uppercase tracking-wider text-mist">
             <tr>
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3">Respondent</th>
@@ -215,12 +217,12 @@ export default function AdminPage() {
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-mist-100">
             {visible.map((s) => (
-              <tr key={s.submissionId} className="hover:bg-slate-50">
-                <td className="whitespace-nowrap px-4 py-3 text-slate-600">{fmtDate(s.submittedAt)}</td>
-                <td className="px-4 py-3 font-medium text-slate-800">{s.respondentName}</td>
-                <td className="px-4 py-3 text-slate-600">{s.respondentCountry}</td>
+              <tr key={s.submissionId} className="hover:bg-paper">
+                <td className="whitespace-nowrap px-4 py-3 text-ink">{fmtDate(s.submittedAt)}</td>
+                <td className="px-4 py-3 font-medium text-navy">{s.respondentName}</td>
+                <td className="px-4 py-3 text-ink">{s.respondentCountry}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {[...s.clients].map((c) => <Badge key={c} tone="navy">{c}</Badge>)}
@@ -228,7 +230,7 @@ export default function AdminPage() {
                 </td>
                 <td className="px-4 py-3 text-right font-semibold text-navy">{s.rows}</td>
                 <td className="px-4 py-3 text-right">
-                  <button type="button" className="text-xs font-semibold text-navy hover:underline" onClick={() => downloadOne(s)}>
+                  <button type="button" className="inline-flex min-h-9 items-center rounded-md px-2 text-xs font-semibold text-navy hover:bg-mist-100" onClick={() => downloadOne(s)}>
                     .xlsx
                   </button>
                 </td>
@@ -244,6 +246,7 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+      </Section>
     </div>,
   )
 }

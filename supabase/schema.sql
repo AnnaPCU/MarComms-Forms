@@ -52,7 +52,9 @@ create policy "admins can read"
   using (true);
 
 -- Vista de resumen: un renglón por envío. Útil para mirar rápido en el panel de Supabase.
-create or replace view public.submissions as
+-- security_invoker: la vista respeta las políticas RLS de la tabla (sin esto, la API pública la leería).
+create or replace view public.submissions
+  with (security_invoker = true) as
   select submission_id,
          min(submitted_at)                as submitted_at,
          min(respondent_name)             as respondent_name,
@@ -62,3 +64,6 @@ create or replace view public.submissions as
   from public.responses
   group by submission_id
   order by submitted_at desc;
+
+revoke all on public.submissions from anon;
+grant select on public.submissions to authenticated;
