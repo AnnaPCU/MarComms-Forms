@@ -4,6 +4,7 @@ import {
 } from '../data/constants'
 import { useId } from 'react'
 import { Field, ChipGroup, OptionList, Select, Textarea, TextInput, Badge, Button, ChevronIcon, CheckIcon } from './ui'
+import { ClientLogo } from './ClientMark'
 
 export const NO_GAP = 'No clear gap'
 export const ANSWER_FIELDS = ['services', 'stakeholders', 'maturity', 'officeType', 'importance', 'decisions', 'gaps', 'reasons', 'action']
@@ -57,19 +58,22 @@ export default function ClientCountryCard({ client, region, country, answer, onC
   const gapsNeedingReason = (answer.gaps || []).filter((g) => g !== NO_GAP)
 
   return (
-    <article id={id} className={`scroll-mt-16 overflow-hidden rounded-xl border bg-white transition ${open ? 'border-cyan shadow-md ring-1 ring-cyan/30' : 'border-mist-200 hover:border-mist-300'}`}>
-      <h4 className="m-0">
+    <article id={id} className={`scroll-mt-16 rounded-xl border bg-white transition ${open ? 'border-cyan shadow-md ring-1 ring-cyan/30' : 'border-mist-200 hover:border-mist-300'}`}>
+      <h4 className={`m-0 ${open ? 'sticky top-[44px] z-20' : ''}`}>
         <button
           type="button"
           onClick={onToggle}
           aria-expanded={open}
           aria-controls={panelId}
-          className={`flex w-full items-center gap-3 px-4 py-3 text-left sm:px-5 sm:py-4 ${open ? 'bg-paper/70' : 'hover:bg-paper'}`}
+          className={`flex w-full items-center gap-3 rounded-t-xl px-4 py-3 text-left sm:px-5 sm:py-4 ${open ? 'border-b border-cyan/40 bg-cyan-50' : 'hover:bg-paper'}`}
         >
         <ChevronIcon className={`h-4 w-4 shrink-0 text-mist transition-transform ${open ? 'rotate-90' : ''}`} />
+        <span className="flex h-9 shrink-0 items-center rounded-md border border-mist-200 bg-white px-2">
+          <ClientLogo client={client} size="sm" />
+        </span>
         <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-          <span className="font-bold text-navy">{country}</span>
-          <span className="font-medium text-ink">{client}</span>
+          <span className="text-base font-bold text-navy">{country}</span>
+          <span className="text-sm font-medium text-ink">{client}</span>
           {region && <span className="text-xs text-ink">{region}</span>}
         </span>
         <Badge tone={done === total ? 'cyan' : done > 0 ? 'navy' : 'neutral'}>

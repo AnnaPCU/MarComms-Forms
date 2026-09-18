@@ -151,7 +151,7 @@ export function Button({ variant = 'primary', size = 'md', className = '', ...pr
 
 
 /** Toggle chips for single or multiple choice with SHORT labels. `max` caps the number of selections. */
-export function ChipGroup({ options, value, onChange, multiple = true, max, searchable = false, filterPlaceholder = 'Filter…' }) {
+export function ChipGroup({ options, value, onChange, multiple = true, max, searchable = false, filterPlaceholder = 'Filter…', renderLabel }) {
   const [q, setQ] = useState('')
   const selected = multiple ? value || [] : value ? [value] : []
   const visible = useMemo(
@@ -194,7 +194,7 @@ export function ChipGroup({ options, value, onChange, multiple = true, max, sear
               onClick={() => toggle(o)}
             >
               {on && <CheckIcon className="h-3.5 w-3.5 shrink-0 text-cyan-600" />}
-              {o}
+              {renderLabel ? renderLabel(o, on) : o}
             </button>
           )
         })}

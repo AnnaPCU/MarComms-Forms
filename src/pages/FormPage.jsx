@@ -5,6 +5,7 @@ import { supabase, isConfigured, TABLE } from '../lib/supabase'
 import { Section, Field, TextInput, Select, ChipGroup, Button, Badge, Notice, CheckIcon } from '../components/ui'
 import ClientCountryCard, { completion, missing, ANSWER_FIELDS, cardId } from '../components/ClientCountryCard'
 import ProgressBar from '../components/ProgressBar'
+import { ClientLogo, ClientBanner } from '../components/ClientMark'
 import { BrandHeader, BrandFooter } from '../components/Brand'
 
 const STORAGE_KEY = 'pcu-abccd-survey-v2'
@@ -233,7 +234,17 @@ export default function FormPage() {
                 />
               </Field>
               <Field label={QUESTIONS.client} required hint="Select all that apply." className="md:col-span-2" error={attempted && !form.clients.length ? 'Select at least one client' : undefined}>
-                <ChipGroup options={CLIENTS} value={form.clients} onChange={setClients} />
+                <ChipGroup
+                  options={CLIENTS}
+                  value={form.clients}
+                  onChange={setClients}
+                  renderLabel={(c) => (
+                    <span className="inline-flex items-center gap-2 py-0.5">
+                      <ClientLogo client={c} size="sm" />
+                      <span>{c}</span>
+                    </span>
+                  )}
+                />
               </Field>
             </div>
           </Section>
@@ -253,12 +264,17 @@ export default function FormPage() {
                 const countries = form.clientCountries[client] || []
                 return (
                   <div key={client} className="rounded-xl border border-mist-200 bg-paper/60 p-4 sm:p-5">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h3 className="font-bold text-navy">{client}</h3>
-                      <Badge tone={countries.length ? 'navy' : 'neutral'}>
-                        {countries.length ? `${countries.length} countr${countries.length === 1 ? 'y' : 'ies'}` : 'No country yet'}
-                      </Badge>
-                    </div>
+                    <h3 className="mb-4 border-b border-mist-200 pb-4">
+                      <ClientBanner
+                        client={client}
+                        subtitle="Where do you work with this client?"
+                        right={
+                          <Badge tone={countries.length ? 'navy' : 'neutral'}>
+                            {countries.length ? `${countries.length} countr${countries.length === 1 ? 'y' : 'ies'}` : 'No country yet'}
+                          </Badge>
+                        }
+                      />
+                    </h3>
                     <Field
                       label={QUESTIONS.region}
                       hint={
@@ -304,8 +320,13 @@ export default function FormPage() {
                 const countries = form.clientCountries[client] || []
                 if (!countries.length) return null
                 return (
-                  <div key={client}>
-                    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-navy"><span className="h-4 w-1 rounded-full bg-cyan" aria-hidden />{client}</h3>
+                  <div key={client} className="rounded-2xl border border-mist-200 bg-paper/60 p-3 sm:p-4">
+                    <h3 className="mb-4 border-l-4 border-cyan pl-4">
+                      <ClientBanner
+                        client={client}
+                        subtitle={`${countries.length} countr${countries.length === 1 ? 'y' : 'ies'} · answer one card per country`}
+                      />
+                    </h3>
                     <div className="space-y-3">
                       {countries.map((country) => {
                         const key = pairKey(client, country)

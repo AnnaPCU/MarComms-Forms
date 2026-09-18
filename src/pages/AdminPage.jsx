@@ -3,6 +3,7 @@ import { supabase, isConfigured, TABLE } from '../lib/supabase'
 import { dbToRecord, toRow, writeXlsx, writeCsv, stamp, safe } from '../utils/export'
 import { Button, Field, TextInput, Badge, Section, Notice } from '../components/ui'
 import { BrandHeader, BrandFooter } from '../components/Brand'
+import { ClientLogo } from '../components/ClientMark'
 
 const PAGE = 1000 // Supabase returns at most 1000 rows per request
 
@@ -173,7 +174,6 @@ export default function AdminPage() {
           {authError && <p className="text-sm text-rose-600">{authError}</p>}
           <Button type="submit" className="w-full">Sign in</Button>
         </div>
-        <p className="mt-4 text-xs text-mist">Admin accounts are created in the Supabase dashboard (Authentication → Users).</p>
       </form>,
     )
   }
@@ -225,7 +225,11 @@ export default function AdminPage() {
                 <td className="px-4 py-3 text-ink">{s.respondentCountry}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
-                    {[...s.clients].map((c) => <Badge key={c} tone="navy">{c}</Badge>)}
+                    {[...s.clients].map((c) => (
+                      <span key={c} className="inline-flex h-7 items-center rounded-md border border-mist-200 bg-white px-1.5" title={c}>
+                        <ClientLogo client={c} size="xs" />
+                      </span>
+                    ))}
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right font-semibold text-navy">{s.rows}</td>
