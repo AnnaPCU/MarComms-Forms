@@ -108,7 +108,7 @@ export default function AdminPage() {
   const summaryRows = (subs) =>
     subs.map((s) => ({
       'Submitted at': s.submittedAt,
-      'Respondent Name': s.respondentName,
+      'Respondent email': s.respondentName,
       'Respondent Country': s.respondentCountry,
       Clients: [...s.clients].join('; '),
       'Client × Country rows': s.rows,

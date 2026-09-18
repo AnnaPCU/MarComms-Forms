@@ -97,9 +97,14 @@ export const REASONS = [
 
 export const OTHER_SPECIFY = 'Other (please specify)'
 
+/** Company email domain accepted for respondents (sub-domains such as ar.pcugroup.com are accepted too). */
+export const EMAIL_DOMAIN = 'pcugroup.com'
+const COMPANY_EMAIL_RE = /^[^\s@]+@([a-z0-9-]+\.)*pcugroup\.com$/i
+export const isCompanyEmail = (v) => COMPANY_EMAIL_RE.test((v || '').trim())
+
 /** Question texts exactly as in the template header row (sheet Survey, A1:N1). */
 export const QUESTIONS = {
-  respondentName: 'Respondent name',
+  respondentName: 'Respondent email',
   respondentCountry: 'Respondent country',
   client: 'Which of the following clients do you currently work with or have an active relationship with?',
   region: 'Which region do you work with?',

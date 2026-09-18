@@ -104,13 +104,14 @@ export default function ClientCountryCard({ client, region, country, answer, onC
             <ChipGroup options={STAKEHOLDERS} value={answer.stakeholders} onChange={(v) => set({ stakeholders: v })} />
           </Field>
 
-          <Field eyebrow="Question 8" label={QUESTIONS.q8} hint="Select one.">
-            <OptionList options={MATURITY} value={answer.maturity} onChange={(v) => set({ maturity: v })} columns={2} />
-          </Field>
-
-          <Field eyebrow="Question 9" label={QUESTIONS.q9} hint="Select one.">
-            <OptionList options={OFFICE_TYPES} value={answer.officeType} onChange={(v) => set({ officeType: v })} />
-          </Field>
+          <div className="grid gap-7 lg:grid-cols-2">
+            <Field eyebrow="Question 8" label={QUESTIONS.q8} hint="Select one.">
+              <OptionList options={MATURITY} value={answer.maturity} onChange={(v) => set({ maturity: v })} />
+            </Field>
+            <Field eyebrow="Question 9" label={QUESTIONS.q9} hint="Select one.">
+              <OptionList options={OFFICE_TYPES} value={answer.officeType} onChange={(v) => set({ officeType: v })} />
+            </Field>
+          </div>
 
           <div className="grid gap-6 sm:grid-cols-2">
             <Field eyebrow="Question 10" label={QUESTIONS.q10} hint="Select one.">

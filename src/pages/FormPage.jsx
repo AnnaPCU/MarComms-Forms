@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CLIENTS, REGIONS, COUNTRIES_BY_REGION, COUNTRY_REGION, ALL_COUNTRIES, RESPONDENT_COUNTRIES, QUESTIONS } from '../data/constants'
+import { CLIENTS, REGIONS, COUNTRIES_BY_REGION, COUNTRY_REGION, ALL_COUNTRIES, RESPONDENT_COUNTRIES, QUESTIONS, EMAIL_DOMAIN, isCompanyEmail } from '../data/constants'
 import { pairKey, splitKey, emptyAnswer, listPairs, toDbRows } from '../utils/export'
 import { supabase, isConfigured, TABLE } from '../lib/supabase'
 import { Section, Field, TextInput, Select, ChipGroup, Button, Badge, Notice, CheckIcon } from '../components/ui'
@@ -9,7 +9,7 @@ import { ClientLogo, ClientBanner } from '../components/ClientMark'
 import { BrandHeader, BrandFooter } from '../components/Brand'
 
 const STORAGE_KEY = 'pcu-abccd-survey-v2'
-const WIDTH = 'max-w-4xl'
+const WIDTH = 'max-w-6xl'
 
 const initialForm = () => ({
   respondentName: '',
@@ -136,7 +136,8 @@ export default function FormPage() {
   // (Q13 only for gaps that need a reason; "Other" text only when "Other" is selected).
   const issues = useMemo(() => {
     const list = []
-    if (!form.respondentName.trim()) list.push({ text: 'Respondent name is required.' })
+    if (!form.respondentName.trim()) list.push({ text: 'Respondent email is required.' })
+    else if (!isCompanyEmail(form.respondentName)) list.push({ text: `Respondent email must be a company address (…@${EMAIL_DOMAIN}).` })
     if (!form.respondentCountry) list.push({ text: 'Respondent country is required.' })
     if (!form.clients.length) list.push({ text: 'Select at least one client.' })
     form.clients.forEach((c) => {
@@ -186,11 +187,11 @@ export default function FormPage() {
 
   const step2Locked = form.clients.length === 0
   const step3Locked = pairs.length === 0
-  const step1Done = Boolean(form.respondentName.trim() && form.respondentCountry && form.clients.length)
+  const step1Done = Boolean(isCompanyEmail(form.respondentName) && form.respondentCountry && form.clients.length)
   const step2Done = !step2Locked && form.clients.every((c) => (form.clientCountries[c] || []).length > 0)
   const step3Done = pairs.length > 0 && answeredCount === pairs.length
   const pending = pairs.length - answeredCount
-  const setupScore = [form.respondentName.trim(), form.respondentCountry, form.clients.length, step2Done].filter(Boolean).length / 4
+  const setupScore = [isCompanyEmail(form.respondentName), form.respondentCountry, form.clients.length, step2Done].filter(Boolean).length / 4
   const percent = Math.round(20 * setupScore + (totalQuestions ? 80 * (answeredQuestions / totalQuestions) : 0))
 
   return (
@@ -217,12 +218,26 @@ export default function FormPage() {
           {/* 1 · Respondent + clients */}
           <Section number={1} title="Respondent and clients" description="Who is completing this form and which clients they work with." done={step1Done}>
             <div className="grid gap-5 md:grid-cols-2">
-              <Field label={QUESTIONS.respondentName} required error={attempted && !form.respondentName.trim() ? 'Required' : undefined}>
+              <Field
+                label={QUESTIONS.respondentName}
+                required
+                hint={`Your company address, e.g. asanguinetti@${EMAIL_DOMAIN}`}
+                error={
+                  attempted && !form.respondentName.trim()
+                    ? 'Required'
+                    : form.respondentName.trim() && !isCompanyEmail(form.respondentName)
+                      ? `Use your company email (…@${EMAIL_DOMAIN})`
+                      : undefined
+                }
+              >
                 <TextInput
+                  type="email"
+                  inputMode="email"
                   value={form.respondentName}
-                  onChange={(e) => patch({ respondentName: e.target.value })}
-                  placeholder="Full name"
-                  autoComplete="name"
+                  onChange={(e) => patch({ respondentName: e.target.value.trim() })}
+                  placeholder={`name@${EMAIL_DOMAIN}`}
+                  autoComplete="email"
+                  spellCheck={false}
                 />
               </Field>
               <Field label={QUESTIONS.respondentCountry} required error={attempted && !form.respondentCountry ? 'Required' : undefined}>
