@@ -137,7 +137,7 @@ export default function FormPage() {
   const issues = useMemo(() => {
     const list = []
     if (!form.respondentName.trim()) list.push({ text: 'Respondent email is required.' })
-    else if (!isCompanyEmail(form.respondentName)) list.push({ text: `Respondent email must be a company address (…@${EMAIL_DOMAIN}).` })
+    else if (!isCompanyEmail(form.respondentName)) list.push({ text: 'Respondent email: use your company email.' })
     if (!form.respondentCountry) list.push({ text: 'Respondent country is required.' })
     if (!form.clients.length) list.push({ text: 'Select at least one client.' })
     form.clients.forEach((c) => {
@@ -221,12 +221,11 @@ export default function FormPage() {
               <Field
                 label={QUESTIONS.respondentName}
                 required
-                hint={`Your company address, e.g. asanguinetti@${EMAIL_DOMAIN}`}
                 error={
                   attempted && !form.respondentName.trim()
                     ? 'Required'
                     : form.respondentName.trim() && !isCompanyEmail(form.respondentName)
-                      ? `Use your company email (…@${EMAIL_DOMAIN})`
+                      ? 'Use your company email'
                       : undefined
                 }
               >
@@ -235,7 +234,7 @@ export default function FormPage() {
                   inputMode="email"
                   value={form.respondentName}
                   onChange={(e) => patch({ respondentName: e.target.value.trim() })}
-                  placeholder={`name@${EMAIL_DOMAIN}`}
+                  placeholder={`asanguinetti@${EMAIL_DOMAIN}`}
                   autoComplete="email"
                   spellCheck={false}
                 />
