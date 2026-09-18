@@ -29,7 +29,6 @@ body { @apply bg-paper text-ink antialiased; }
   :where(button, a, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--color-cyan-600);
     outline-offset: 2px;
-    border-radius: 0.5rem;
   }
 }
 
@@ -37,13 +36,13 @@ body { @apply bg-paper text-ink antialiased; }
   .input {
     /* 16px on phones stops iOS Safari from zooming on focus; 14px on laptops. */
     @apply w-full rounded-lg border border-mist-300 bg-white px-3 py-2.5 text-base text-navy
-      placeholder:text-mist shadow-sm outline-none transition
-      focus:border-cyan-600 sm:py-2 sm:text-sm disabled:bg-paper disabled:text-mist;
+      placeholder:text-mist shadow-sm transition
+      focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/30 sm:py-2 sm:text-sm disabled:bg-paper disabled:text-mist;
   }
   .chip {
     @apply inline-flex min-h-10 select-none items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium leading-tight transition
       border-mist-300 bg-white text-ink hover:border-cyan hover:bg-cyan-50 hover:text-navy sm:min-h-0 sm:py-1.5
-      disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-mist-300 disabled:hover:bg-white disabled:hover:text-ink;
+      aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-mist-300 aria-disabled:hover:bg-white aria-disabled:hover:text-ink;
   }
   /* Selected state is a light cyan tint: solid navy stays reserved for the primary button and step circles. */
   .chip-on {

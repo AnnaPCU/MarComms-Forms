@@ -151,9 +151,9 @@ export default function AdminPage() {
 
   if (!isConfigured) {
     return shell(
-      <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <Notice tone="info" title="Not configured">
         Supabase is not configured. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> (see SETUP.md).
-      </p>,
+      </Notice>,
     )
   }
 

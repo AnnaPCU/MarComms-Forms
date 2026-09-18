@@ -3,7 +3,7 @@ import {
   GAPS, MAX_GAPS, REASONS, OTHER_SPECIFY, QUESTIONS,
 } from '../data/constants'
 import { useId } from 'react'
-import { Field, ChipGroup, OptionList, Select, Textarea, TextInput, Badge, Button, ChevronIcon } from './ui'
+import { Field, ChipGroup, OptionList, Select, Textarea, TextInput, Badge, Button, ChevronIcon, CheckIcon } from './ui'
 
 export const NO_GAP = 'No clear gap'
 export const ANSWER_FIELDS = ['services', 'stakeholders', 'maturity', 'officeType', 'importance', 'decisions', 'gaps', 'reasons', 'action']
@@ -57,27 +57,28 @@ export default function ClientCountryCard({ client, region, country, answer, onC
   const gapsNeedingReason = (answer.gaps || []).filter((g) => g !== NO_GAP)
 
   return (
-    <article id={id} className={`scroll-mt-6 overflow-hidden rounded-xl border bg-white ${open ? 'border-navy/40 shadow-sm' : 'border-mist-200'}`}>
-      <h3 className="m-0">
+    <article id={id} className={`scroll-mt-16 overflow-hidden rounded-xl border bg-white transition ${open ? 'border-cyan shadow-md ring-1 ring-cyan/30' : 'border-mist-200 hover:border-mist-300'}`}>
+      <h4 className="m-0">
         <button
           type="button"
           onClick={onToggle}
           aria-expanded={open}
           aria-controls={panelId}
-          className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-paper sm:px-5"
+          className={`flex w-full items-center gap-3 px-4 py-3 text-left sm:px-5 sm:py-4 ${open ? 'bg-paper/70' : 'hover:bg-paper'}`}
         >
         <ChevronIcon className={`h-4 w-4 shrink-0 text-mist transition-transform ${open ? 'rotate-90' : ''}`} />
-        <span className="min-w-0 flex-1">
-          <span className="font-bold text-navy">{client}</span>
-          <span className="mx-2 text-mist-300">/</span>
-          <span className="font-medium text-ink">{country}</span>
-          {region && <span className="ml-2 text-xs text-ink">{region}</span>}
+        <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+          <span className="font-bold text-navy">{country}</span>
+          <span className="font-medium text-ink">{client}</span>
+          {region && <span className="text-xs text-ink">{region}</span>}
         </span>
-        <Badge tone={done === total ? 'ok' : done > 0 ? 'warn' : 'neutral'}>{done}/{total} answered</Badge>
+        <Badge tone={done === total ? 'cyan' : done > 0 ? 'navy' : 'neutral'}>
+          {done === total ? 'Complete' : done > 0 ? `${done}/${total}` : 'Not started'}
+        </Badge>
         </button>
-      </h3>
+      </h4>
       <div className="h-1 bg-mist-100" aria-hidden>
-        <div className={`h-full transition-all ${done === total ? 'bg-emerald-500' : 'bg-cyan'}`} style={{ width: `${(done / total) * 100}%` }} />
+        <div className={`h-full transition-all ${done === total ? 'bg-cyan-600' : 'bg-cyan'}`} style={{ width: `${(done / total) * 100}%` }} />
       </div>
 
       {open && (
@@ -87,6 +88,7 @@ export default function ClientCountryCard({ client, region, country, answer, onC
             {answer.services.includes(SERVICE_OTHER) && (
               <TextInput
                 className="mt-2 max-w-md"
+                aria-label="Other service, please specify"
                 placeholder="Other service: please specify"
                 value={answer.serviceOther}
                 onChange={(e) => set({ serviceOther: e.target.value })}
@@ -120,6 +122,7 @@ export default function ClientCountryCard({ client, region, country, answer, onC
             {answer.gaps.includes(OTHER_SPECIFY) && (
               <TextInput
                 className="mt-2 max-w-md"
+                aria-label="Other gap, please specify"
                 placeholder="Other gap: please specify"
                 value={answer.gapOther}
                 onChange={(e) => set({ gapOther: e.target.value })}
@@ -135,6 +138,7 @@ export default function ClientCountryCard({ client, region, country, answer, onC
                     <div className="max-w-md">
                       <Select
                         options={REASONS}
+                        aria-label={`Main reason for ${short(gap)}`}
                         placeholder="Select the main reason…"
                         value={(answer.reasons || {})[gap] || ''}
                         onChange={(v) => setReason(gap, v)}
@@ -145,6 +149,7 @@ export default function ClientCountryCard({ client, region, country, answer, onC
                 {anyOtherReason && (
                   <TextInput
                     className="max-w-md"
+                    aria-label="Other reason, please specify"
                     placeholder="Other reason: please specify"
                     value={answer.reasonOther}
                     onChange={(e) => set({ reasonOther: e.target.value })}
@@ -154,8 +159,9 @@ export default function ClientCountryCard({ client, region, country, answer, onC
             )}
           </Field>
 
-          <Field eyebrow="Question 14" label={QUESTIONS.q14}>
+          <Field eyebrow="Question 14" label={QUESTIONS.q14} hint="One or two sentences: what, who, by when.">
             <Textarea
+              rows={3}
               value={answer.action}
               onChange={(e) => set({ action: e.target.value })}
               placeholder="One concrete action, who should lead it and by when. Example: introduce our regional inspections lead to the client’s procurement head before Q2."
@@ -163,12 +169,21 @@ export default function ClientCountryCard({ client, region, country, answer, onC
           </Field>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-mist-100 pt-4">
-            <p className={`text-sm ${left.length ? 'text-amber-700' : 'text-emerald-700'}`}>
-              {left.length ? `Required, still missing: ${left.join(', ')}` : 'All questions answered.'}
-            </p>
+            {left.length ? (
+              <p className="text-sm text-ink">Required, still missing: {left.join(', ')}</p>
+            ) : (
+              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-navy">
+                <CheckIcon className="h-4 w-4 text-cyan-600" />
+                All 9 questions answered
+              </p>
+            )}
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={onToggle}>Collapse</Button>
-              {hasNext && <Button onClick={onNext}>Next card →</Button>}
+              <Button variant="ghost" size="sm" onClick={onToggle}>Collapse</Button>
+              {hasNext && (
+                <Button size="sm" onClick={onNext}>
+                  Next card <ChevronIcon className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </div>

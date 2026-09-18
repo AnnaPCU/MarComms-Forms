@@ -2,12 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { CLIENTS, REGIONS, COUNTRIES_BY_REGION, COUNTRY_REGION, ALL_COUNTRIES, RESPONDENT_COUNTRIES, QUESTIONS } from '../data/constants'
 import { pairKey, splitKey, emptyAnswer, listPairs, toDbRows } from '../utils/export'
 import { supabase, isConfigured, TABLE } from '../lib/supabase'
-import { Section, Field, TextInput, Select, ChipGroup, Button, Badge, Notice } from '../components/ui'
+import { Section, Field, TextInput, Select, ChipGroup, Button, Badge, Notice, CheckIcon } from '../components/ui'
 import ClientCountryCard, { completion, missing, ANSWER_FIELDS, cardId } from '../components/ClientCountryCard'
 import ProgressBar from '../components/ProgressBar'
 import { BrandHeader, BrandFooter } from '../components/Brand'
 
 const STORAGE_KEY = 'pcu-abccd-survey-v2'
+const WIDTH = 'max-w-4xl'
 
 const initialForm = () => ({
   respondentName: '',
@@ -169,6 +170,7 @@ export default function FormPage() {
       const rows = toDbRows(form, submissionId, submittedAt)
       const { error } = await supabase.from(TABLE).insert(rows)
       if (error) throw new Error(error.message)
+      requestAnimationFrame(() => document.getElementById('section-4')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
       setSubmit({
         status: 'success',
         message: `${rows.length} Client × Country row${rows.length === 1 ? '' : 's'} saved at ${new Date().toLocaleTimeString()}. Reference ${submissionId.slice(0, 8)}.`,
@@ -193,10 +195,12 @@ export default function FormPage() {
   return (
     <div className="min-h-screen">
       <BrandHeader
+        width={WIDTH}
         title="ABCCD Inspections Survey · Client relationship map"
         subtitle="For leaders and service owners of Inspections. Tell us where you serve ADM, Bunge, Cargill, COFCO and LDC, how mature each relationship is, where the main gaps are and what PCU should do next. One short card per client and country."
       />
       <ProgressBar
+        width={WIDTH}
         percent={submit.status === 'success' ? 100 : percent}
         label={
           submit.status === 'success'
@@ -207,7 +211,7 @@ export default function FormPage() {
         }
       />
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
+      <main className={`mx-auto ${WIDTH} px-4 py-6 sm:px-6 sm:py-10`}>
         <div className="space-y-8">
           {/* 1 · Respondent + clients */}
           <Section number={1} title="Respondent and clients" description="Who is completing this form and which clients they work with." done={step1Done}>
@@ -251,7 +255,7 @@ export default function FormPage() {
                   <div key={client} className="rounded-xl border border-mist-200 bg-paper/60 p-4 sm:p-5">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <h3 className="font-bold text-navy">{client}</h3>
-                      <Badge tone={countries.length ? 'navy' : 'warn'}>
+                      <Badge tone={countries.length ? 'navy' : 'neutral'}>
                         {countries.length ? `${countries.length} countr${countries.length === 1 ? 'y' : 'ies'}` : 'No country yet'}
                       </Badge>
                     </div>
@@ -329,12 +333,15 @@ export default function FormPage() {
           </Section>
 
           {/* 4 · Submit */}
-          <Section number={4} title="Submit" description="Send your answers to the MarComms team." done={submit.status === 'success'}>
+          <Section id="section-4" number={4} title="Submit" description="Send your answers to the MarComms team." done={submit.status === 'success'}>
             {submit.status === 'success' ? (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-5" role="status">
-                <p className="text-lg font-bold text-emerald-900">Thank you, your answers were sent.</p>
-                <p className="mt-1 text-sm text-emerald-800">{submit.message}</p>
-                <p className="mt-3 text-sm text-emerald-800">
+              <Notice tone="success" role="status" className="px-5 py-5">
+                <p className="inline-flex items-center gap-2 text-lg font-bold">
+                  <CheckIcon className="h-5 w-5 text-cyan-600" />
+                  Thank you, your answers were sent.
+                </p>
+                <p className="mt-1 text-sm">{submit.message}</p>
+                <p className="mt-3 text-sm">
                   You can close this page. If you need to correct something, edit your answers and submit again; the
                   MarComms team keeps the latest version.
                 </p>
@@ -342,22 +349,22 @@ export default function FormPage() {
                   <Button variant="secondary" onClick={() => setSubmit({ status: 'idle', message: '' })}>Edit my answers</Button>
                   <Button variant="ghost" onClick={resetForm}>Start a new response</Button>
                 </div>
-              </div>
+              </Notice>
             ) : (
               <div className="space-y-5">
                 {!isConfigured && (
-                  <Notice tone="warn" title="Not available">
+                  <Notice tone="info" title="Not available">
                     Online submission is not configured yet. Please contact the MarComms team.
                   </Notice>
                 )}
 
                 {attempted && issues.length > 0 ? (
-                  <Notice tone="warn" title="Before you submit" ref={issuesRef} tabIndex={-1} role="alert" className="outline-none">
+                  <Notice tone="error" title="Before you submit" ref={issuesRef} tabIndex={-1} role="alert" className="outline-none">
                     <ul className="list-disc space-y-0.5 pl-4">
                       {issues.map((i) =>
                         i.cardKey ? (
                           <li key={i.text}>
-                            <button type="button" className="text-left font-medium underline decoration-amber-400 underline-offset-2 hover:text-navy" onClick={() => goToCard(i.cardKey)}>
+                            <button type="button" className="text-left font-medium underline underline-offset-2 hover:text-navy" onClick={() => goToCard(i.cardKey)}>
                               {i.text}
                             </button>
                           </li>
@@ -381,7 +388,7 @@ export default function FormPage() {
                   <Button size="lg" onClick={sendForm} disabled={!isConfigured || submit.status === 'sending'} className="min-w-[200px]">
                     {submit.status === 'sending' ? 'Sending…' : 'Submit answers'}
                   </Button>
-                  <Button variant="ghost" onClick={resetForm}>Reset form</Button>
+                  <Button variant="ghost" size="sm" className="ml-auto" onClick={resetForm}>Reset form</Button>
                 </div>
 
                 {submit.status === 'error' && (
@@ -394,7 +401,7 @@ export default function FormPage() {
 
       </main>
 
-      <BrandFooter links={[{ href: '#/admin', label: 'Admin' }]} />
+      <BrandFooter width={WIDTH} links={[{ href: '#/admin', label: 'Admin' }]} />
     </div>
   )
 }

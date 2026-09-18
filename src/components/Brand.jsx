@@ -9,12 +9,12 @@ export { logoColor, logoWhite, logoIcon }
  *  · light-blue (cyan) bar along the whole top edge
  *  · one dark-blue block: white logo top-left, then the page title
  */
-export function BrandHeader({ title, subtitle, eyebrow = 'Inspections · Commercial intelligence', facts = [], right = null }) {
+export function BrandHeader({ title, subtitle, eyebrow = 'Inspections · Commercial intelligence', facts = [], right = null, width = 'max-w-6xl' }) {
   return (
     <header>
       <div className="h-1.5 w-full bg-cyan" aria-hidden />
       <div className="bg-navy text-white">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className={`mx-auto ${width} px-4 sm:px-6`}>
           <div className="flex items-center justify-between gap-6 border-b border-white/10 py-4">
             <a href="#/" className="shrink-0" aria-label="MarComms · home">
               <img src={logoWhite} alt="MarComms" className="h-8 w-auto sm:h-9" />
@@ -49,10 +49,10 @@ export function BrandHeader({ title, subtitle, eyebrow = 'Inspections · Commerc
  * Footer: small icon + attribution on the left, utility links on the right, and the
  * dark-blue bar along the bottom edge that starts at the right and ends aligned with the content.
  */
-export function BrandFooter({ links = [] }) {
+export function BrandFooter({ links = [], width = 'max-w-6xl' }) {
   return (
     <footer className="mt-12 border-t border-mist-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6">
+      <div className={`mx-auto flex ${width} flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6`}>
         <div className="flex items-center gap-3">
           <img src={logoIcon} alt="" className="h-7 w-auto" aria-hidden />
           <div className="text-xs leading-tight text-mist">

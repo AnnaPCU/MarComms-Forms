@@ -69,7 +69,12 @@ export function Field({ label, hint, required, eyebrow, error, children, classNa
   const hintId = hint ? `${id}-hint` : undefined
   return (
     <div className={className}>
-      {eyebrow && <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-cyan-600">{eyebrow}</span>}
+      {eyebrow && (
+        <span className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-navy">
+          <span className="h-3 w-0.5 rounded-full bg-cyan" aria-hidden />
+          {eyebrow}
+        </span>
+      )}
       <p id={labelId} className={`mb-1.5 font-semibold ${eyebrow ? 'text-[15px] leading-snug text-navy' : 'text-sm text-navy'}`}>
         {label}
         {required && <span className="text-rose-600" aria-hidden> *</span>}
@@ -91,7 +96,6 @@ export const Notice = forwardRef(function Notice({ tone = 'info', title, childre
   const tones = {
     info: 'border-mist bg-paper text-ink',
     success: 'border-cyan bg-cyan-50 text-navy',
-    warn: 'border-amber-500 bg-amber-50 text-amber-900',
     error: 'border-rose-500 bg-rose-50 text-rose-800',
   }
   return (
@@ -145,68 +149,6 @@ export function Button({ variant = 'primary', size = 'md', className = '', ...pr
   )
 }
 
-/** Free-text tags with optional suggestions. Enter, comma or "Add" commits a tag. */
-export function TagInput({ value = [], onChange, placeholder, suggestions = [], id }) {
-  const [draft, setDraft] = useState('')
-  const listId = id ? `${id}-list` : undefined
-
-  const commit = () => {
-    const parts = draft.split(',').map((s) => s.trim()).filter(Boolean)
-    if (!parts.length) return
-    const next = [...value]
-    parts.forEach((p) => {
-      if (!next.some((v) => v.toLowerCase() === p.toLowerCase())) next.push(p)
-    })
-    onChange(next)
-    setDraft('')
-  }
-
-  return (
-    <div>
-      <div className="flex gap-2">
-        <input
-          id={id}
-          list={listId}
-          className="input"
-          value={draft}
-          placeholder={placeholder}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ',') {
-              e.preventDefault()
-              commit()
-            }
-            if (e.key === 'Backspace' && !draft && value.length) onChange(value.slice(0, -1))
-          }}
-          onBlur={commit}
-        />
-        <Button variant="secondary" onClick={commit} disabled={!draft.trim()}>Add</Button>
-        {listId && (
-          <datalist id={listId}>
-            {suggestions.filter((s) => !value.includes(s)).map((s) => <option key={s} value={s} />)}
-          </datalist>
-        )}
-      </div>
-      {value.length > 0 && (
-        <ul className="mt-2 flex flex-wrap gap-2">
-          {value.map((v) => (
-            <li key={v} className="chip chip-on cursor-default">
-              {v}
-              <button
-                type="button"
-                aria-label={`Remove ${v}`}
-                className="ml-1 rounded-full px-1 leading-none hover:bg-navy/10"
-                onClick={() => onChange(value.filter((x) => x !== v))}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
 
 /** Toggle chips for single or multiple choice with SHORT labels. `max` caps the number of selections. */
 export function ChipGroup({ options, value, onChange, multiple = true, max, searchable = false, filterPlaceholder = 'Filter…' }) {
@@ -247,7 +189,7 @@ export function ChipGroup({ options, value, onChange, multiple = true, max, sear
               role={multiple ? undefined : 'radio'}
               aria-pressed={multiple ? on : undefined}
               aria-checked={multiple ? undefined : on}
-              disabled={!on && atMax}
+              aria-disabled={!on && atMax ? true : undefined}
               className={`chip ${on ? 'chip-on' : ''}`}
               onClick={() => toggle(o)}
             >
@@ -328,41 +270,12 @@ export function OptionList({ options, value, onChange, multiple = false, max, co
   )
 }
 
-export function Scale({ value, onChange, lowLabel, highLabel }) {
-  return (
-    <div>
-      <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            aria-pressed={value === n}
-            onClick={() => onChange(value === n ? null : n)}
-            className={`h-11 w-11 rounded-lg border text-sm font-bold transition ${
-              value === n ? 'border-cyan-600 bg-cyan-50 text-navy' : 'border-mist-300 bg-white text-ink hover:border-cyan hover:text-navy'
-            }`}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
-      {(lowLabel || highLabel) && (
-        <div className="mt-1 flex w-[15rem] justify-between text-[11px] text-ink">
-          <span>{lowLabel}</span>
-          <span>{highLabel}</span>
-        </div>
-      )}
-    </div>
-  )
-}
 
 export function Badge({ tone = 'neutral', children }) {
   const tones = {
     neutral: 'bg-mist-100 text-ink',
-    ok: 'bg-emerald-100 text-emerald-800',
-    warn: 'bg-amber-100 text-amber-800',
     navy: 'bg-navy/10 text-navy',
     cyan: 'bg-cyan/15 text-navy',
   }
-  return <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${tones[tone]}`}>{children}</span>
+  return <span className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums ${tones[tone] || tones.neutral}`}>{children}</span>
 }
