@@ -7,5 +7,6 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 // opened by double-click (file://) or dropped on any static host.
 export default defineConfig({
   base: './',
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   plugins: [react(), tailwindcss(), viteSingleFile()],
 })
