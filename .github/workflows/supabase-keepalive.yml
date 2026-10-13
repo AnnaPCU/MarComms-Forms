@@ -1,0 +1,32 @@
+# Keeps the Supabase free-tier project awake.
+# Supabase pauses free projects after 7 days without activity; when paused, the form
+# cannot save answers and /#/admin shows "Failed to fetch". This job runs a read query
+# every 3 days so the project never reaches the 7-day threshold.
+#
+# The publishable key below is the same public key already shipped in the website's
+# JavaScript. Row Level Security only lets it insert, so this read returns [] but still
+# counts as database activity.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "17 9 */3 * *"   # 09:17 UTC every 3 days
+  workflow_dispatch: {}       # "Run workflow" button for a manual check
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the responses table
+        env:
+          SUPABASE_URL: https://qlxtkcotfozssmyusrhz.supabase.co
+          SUPABASE_KEY: sb_publishable_sj_5JNfJtB4gD2wdXto7jA_6XnQkWaa
+        run: |
+          code=$(curl -s -o body.txt -w "%{http_code}" --max-time 30 \
+            -H "apikey: $SUPABASE_KEY" \
+            "$SUPABASE_URL/rest/v1/responses?select=id&limit=1")
+          echo "HTTP $code"; cat body.txt; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Supabase did not answer 200. The project may be paused: open supabase.com/dashboard and click Restore."
+            exit 1
+          fi
