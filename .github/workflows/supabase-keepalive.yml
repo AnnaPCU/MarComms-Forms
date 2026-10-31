@@ -1,32 +1,41 @@
 # Keeps the Supabase free-tier project awake.
-# Supabase pauses free projects after 7 days without activity; when paused, the form
-# cannot save answers and /#/admin shows "Failed to fetch". This job runs a read query
-# every 3 days so the project never reaches the 7-day threshold.
+#
+# Supabase pauses free projects after ~7 days without activity. Plain public reads were
+# NOT enough (the project was paused on 2026-10-31 even though this job got HTTP 200 every
+# 3 days), so the job now calls the keepalive_ping() function created by
+# supabase/migrations/004_keepalive_heartbeat.sql. That function reads the responses table
+# and WRITES one row in public.keepalive, which is real database activity.
 #
 # The publishable key below is the same public key already shipped in the website's
-# JavaScript. Row Level Security only lets it insert, so this read returns [] but still
-# counts as database activity.
+# JavaScript. It can only call the function; it cannot read or change form answers.
 name: Supabase keep-alive
 
 on:
   schedule:
-    - cron: "17 9 */3 * *"   # 09:17 UTC every 3 days
+    - cron: "17 9 * * *"     # every day, 09:17 UTC
   workflow_dispatch: {}       # "Run workflow" button for a manual check
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Query the responses table
+      - name: Write a heartbeat in the database
         env:
           SUPABASE_URL: https://qlxtkcotfozssmyusrhz.supabase.co
           SUPABASE_KEY: sb_publishable_sj_5JNfJtB4gD2wdXto7jA_6XnQkWaa
         run: |
-          code=$(curl -s -o body.txt -w "%{http_code}" --max-time 30 \
-            -H "apikey: $SUPABASE_KEY" \
-            "$SUPABASE_URL/rest/v1/responses?select=id&limit=1")
-          echo "HTTP $code"; cat body.txt; echo
-          if [ "$code" != "200" ]; then
-            echo "::error::Supabase did not answer 200. The project may be paused: open supabase.com/dashboard and click Restore."
-            exit 1
+          for attempt in 1 2 3 4; do
+            code=$(curl -s -o body.txt -w "%{http_code}" --max-time 30 -X POST \
+              -H "apikey: $SUPABASE_KEY" -H "Content-Type: application/json" \
+              -d '{"p_source":"github-actions"}' \
+              "$SUPABASE_URL/rest/v1/rpc/keepalive_ping")
+            echo "Attempt $attempt: HTTP $code"; cat body.txt; echo
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          if [ "$code" = "404" ]; then
+            echo "::error::keepalive_ping() not found. Run supabase/migrations/004_keepalive_heartbeat.sql in the Supabase SQL Editor."
+          else
+            echo "::error::Supabase did not answer 200 (HTTP $code). The project may be paused: open https://supabase.com/dashboard/project/qlxtkcotfozssmyusrhz and click Resume project."
           fi
+          exit 1

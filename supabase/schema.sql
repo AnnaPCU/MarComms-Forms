@@ -67,3 +67,41 @@ create or replace view public.submissions
 
 revoke all on public.submissions from anon;
 grant select on public.submissions to authenticated;
+
+-- Latido de mantenimiento para que el plan gratuito no pause el proyecto (ver migración 004).
+create table if not exists public.keepalive (
+  id          smallint    primary key default 1 check (id = 1),  -- una sola fila
+  pinged_at   timestamptz not null default now(),
+  source      text        not null default '',
+  ping_count  bigint      not null default 0
+);
+
+alter table public.keepalive enable row level security;
+revoke all on public.keepalive from anon, authenticated;
+
+create or replace function public.keepalive_ping(p_source text default 'unknown')
+returns timestamptz
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_now timestamptz := now();
+begin
+  -- Lectura real sobre la tabla del formulario (no devuelve nada al llamador).
+  perform count(*) from public.responses;
+
+  -- Escritura real: una sola fila que se actualiza en cada latido.
+  insert into public.keepalive (id, pinged_at, source, ping_count)
+  values (1, v_now, left(coalesce(p_source, 'unknown'), 40), 1)
+  on conflict (id) do update
+    set pinged_at  = excluded.pinged_at,
+        source     = excluded.source,
+        ping_count = public.keepalive.ping_count + 1;
+
+  return v_now;
+end;
+$$;
+
+revoke all on function public.keepalive_ping(text) from public;
+grant execute on function public.keepalive_ping(text) to anon, authenticated;
